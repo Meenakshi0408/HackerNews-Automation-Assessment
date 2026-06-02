@@ -1,0 +1,320 @@
+{
+  "name": "HackerNews Simple Morning Brief",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://discord.com/api/webhooks/YOUR_WEBHOOK_HERE",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "=⚠️ **WORKFLOW ERROR ALERT** ⚠️\\n📅 An error occurred in the HackerNews Morning Brief workflow.\\n\\n❌ Error: {{ $json.execution?.error?.message ?? $json.error?.message ?? \"Unknown error\" }}\\n🕐 Time: {{ new Date().toUTCString() }}\\n\\nPlease check the n8n execution log for details."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "767fdfe2-295e-4e67-9596-72162a587e92",
+      "name": "Discord — Error Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1136,
+        416
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "e2399cd8-2b55-4257-900a-fa8344ff6bb5",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1360,
+        944
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst idArray = Array.isArray(response) ? response : Object.values(response);\nconst topFiveIds = idArray.slice(0, 5);\nreturn topFiveIds.map(id => ({\n  json: { story_id: Number(id) }\n}));"
+      },
+      "id": "6adfbcd3-f607-4d82-8858-6f1bd5f5cb82",
+      "name": "Limit to Top 5",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1584,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "check-score",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": 100,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "bdbc8f48-d962-45be-981c-c2b46150c64f",
+      "name": "IF Score > 100",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1136,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://discord.com/api/webhooks/YOUR_WEBHOOK_HERE",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "=🔥 **HOT STORY EXCEEDED THRESHOLD** 🔥\\n📌 **Title:** {{ $json.title }}\\n👤 **Author:** {{ $json.by }}\\n⭐ **Score:** {{ $json.score }} points\\n🔗 **Link:** {{ $json.url || \"https://news.ycombinator.com/item?id=\" + $json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c0479334-e3c1-4023-aeb6-27c38bdd4a08",
+      "name": "Discord - Hot Story",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -912,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://discord.com/api/webhooks/YOUR_WEBHOOK_HERE",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "=📰 **Normal Technical Story**\\n📌 **Title:** {{ $json.title }}\\n👤 **Author:** {{ $json.by }}\\n⭐ **Score:** {{ $json.score }} points\\n🔗 **Link:** {{ $json.url || \"https://news.ycombinator.com/item?id=\" + $json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "77641dc4-b16f-4b0f-9b0e-762833235a1e",
+      "name": "Discord - Normal Story",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -912,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "id": "a6c37deb-d2cd-420f-b243-11028987a53b",
+      "name": "Schedule Trigger1",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -2032,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://hacker-news.firebaseio.com/v0/topstories.json",
+        "options": {}
+      },
+      "id": "53ce83bc-9623-49f9-a4c3-cad19c8cc165",
+      "name": "Fetch Top Story IDs1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1808,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://hacker-news.firebaseio.com/v0/item/{{ $json.story_id }}.json",
+        "options": {}
+      },
+      "id": "72c6d91d-266f-45a7-8820-83bbd7ce523e",
+      "name": "Fetch Story Details1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1360,
+        608
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {},
+      "id": "952c4d75-efec-4ca9-9840-353ab45b3e91",
+      "name": "Merge After Discord",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -688,
+        688
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Discord — Error Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit to Top 5": {
+      "main": [
+        [
+          {
+            "node": "Fetch Story Details1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Score > 100": {
+      "main": [
+        [
+          {
+            "node": "Discord - Hot Story",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Discord - Normal Story",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Fetch Top Story IDs1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Top Story IDs1": {
+      "main": [
+        [
+          {
+            "node": "Limit to Top 5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Story Details1": {
+      "main": [
+        [
+          {
+            "node": "IF Score > 100",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Discord — Error Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discord - Hot Story": {
+      "main": [
+        [
+          {
+            "node": "Merge After Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge After Discord": {
+      "main": [
+        [
+          {
+            "node": "Fetch Story Details1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discord - Normal Story": {
+      "main": [
+        [
+          {
+            "node": "Merge After Discord",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "31010dd5-ac87-4361-86dd-9d9e600deb13",
+  "meta": {
+    "instanceId": "e5344e5045e67dc5374f00051d0afffa1084161fe68b583d0f41fb9c3bd36f29"
+  },
+  "id": "i7sMfABF2ch0ybZx",
+  "tags": []
+}
